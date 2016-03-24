@@ -1,0 +1,192 @@
+[macro-sofie_audio_file_config]
+exten => s,1,set(sofie_msg_accueil=msg_accueil_sofie)
+exten => s,n,set(sofie_msg_aucune_reponse=msg_aucune_reponse) ; message apres delai d'attente de saisie dépassé 
+
+;[sofie_audio_file_dir] ;definition du repertoire des fichiers audio
+exten => s,n,set(sofie_audio_file_dir=sofie)
+
+;[susie_audio_file_dir] ;definition du repertoire des fichiers audio
+;exten => s,n,set(sofie_audio_file_dir=susie2014)
+
+;[sofie_standard_init]
+exten => s,n,set(sofie_msg_code_forage_deja_init=msg_code_forage_deja_init)
+exten => s,n,set(sofie_msg_num_forage_deja_init=msg_num_forage_deja_init)
+exten => s,n,set(sofie_msg_code_forage_non_valide=msg_code_forage_non_valide)
+exten => s,n,set(sofie_msg_saisie_num_forage=msg_saisie_num_forage)
+exten => s,n,set(sofie_msg_erreur_saisie=msg_erreur_saisie)
+exten => s,n,set(sofie_msg_corrige_saisie=msg_corrige_saisie) ;msg saisir touche * pour corriger
+exten => s,n,set(sofie_msg_touche_invalid=msg_touche_invalid)
+exten => s,n,set(sofie_msg_aucune_reponse=msg_aucune_reponse)
+exten => s,n,set(sofie_msg_erreur_init=msg_erreur_init)
+
+;[sofie_set_profil]
+exten => s,n,set(sofie_msg_menu_set_profil=msg_menu_set_profil)
+exten => s,n,set(sofie_msg_saisie_num_forage=msg_saisie_num_forage)
+
+;[sofie_comite_eau]
+;exten => s,n,set(sofie_msg_menu_comite_eau0=msg_menu_comite_eau1)
+;exten => s,n,set(sofie_msg_menu_comite_eau0=msg_menu_comite_eau1)
+exten => s,n,set(sofie_msg_menu_comite_eau1=msg_menu_comite_eau1)
+exten => s,n,set(sofie_msg_menu_comite_eau2=msg_menu_comite_eau2)
+exten => s,n,set(sofie_msg_menu_comite_eau3=msg_menu_comite_eau3)
+exten => s,n,set(sofie_msg_confirmation_comite_eau1=msg_confirmation_comite_eau1)
+exten => s,n,set(sofie_msg_confirmation_comite_eau2=msg_confirmation_comite_eau2)
+exten => s,n,set(sofie_msg_confirmation_comite_eau3=msg_confirmation_comite_eau1)
+
+;[sofie_reparateur]
+exten => s,n,set(sofie_msg_menu_reparateur=msg_menu_reparateur)
+exten => s,n,set(sofie_msg_menu_reparateur1=msg_menu_reparateur1)
+exten => s,n,set(sofie_msg_menu_reparateur2=msg_menu_reparateur2)
+exten => s,n,set(sofie_msg_saisie_num_ticket_panne=msg_saisie_num_ticket_panne)
+exten => s,n,set(sofie_msg_saisie_num_ticket_panne_non_valide=msg_saisie_num_ticket_panne_non_valide)
+exten => s,n,set(sofie_msg_acces_refuse=msg_acces_refuse)
+exten => s,n,set(sofie_msg_acces_refuse2=msg_acces_refuse2)
+
+;[sofie_agent]
+exten => s,n,set(sofie_msg_menu_agent1=msg_menu_agent1)
+exten => s,n,set(sofie_msg_menu_agent2=msg_menu_agent2)
+exten => s,n,set(sofie_msg_menu_agent3=msg_menu_agent3)
+exten => s,n,set(sofie_msg_menu_sociologue1=msg_menu_sociologue)
+exten => s,n,set(sofie_msg_menu_sociologue2=msg_menu_sociologue)
+exten => s,n,set(sofie_msg_saisie_agent=msg_saisie_agent)
+
+;[sofie_confirmation_cde]
+exten => s,n,set(sofie_msg_commande_existe=msg_commande_existe)
+exten => s,n,set(sofie_msg_system_error=msg_system_error)
+
+;[sofie_signaler_reparation]
+exten => s,n,set(sofie_msg_confirmation_reparation=msg_confirmation_reparation)
+exten => s,n,set(sofie_msg_confirmation_reparation_existe=msg_confirmation_reparation_existe)
+
+;[macro-sofie_enreg_confirmation_cde]
+exten => s,n,set(sofie_msg_confirmation_cde2=msg_confirmation_cde2)
+exten => s,n,set(sofie_msg_confirmation_cde3=msg_confirmation_cde3)
+exten => s,n,set(sofie_msg_confirmation_cde4=msg_confirmation_cde4)
+exten => s,n,set(sofie_msg_nb_jour_reparation=msg_nb_jour_reparation)
+exten => s,n,set(sofie_msg_nb_heure_reparation=msg_nb_heure_reparation)
+exten => s,n,set(sofie_msg_nb_minute_reparation=msg_nb_minute_reparation)
+exten => s,n,set(sofie_msg_nb_second_reparation=msg_nb_second_reparation)
+
+;[macro-sofie_enreg_signaler_reparation]
+;exten => s,n,set(sofie_msg_confirmation_reparation=msg_confirmation_reparation)
+
+;[sofie_gerer_absence]
+exten => s,n,set(sofie_msg_menu_gerer_absence1=msg_signaler_absence);Tapez 1 pour signaler une absence sinon veuillez raccrochez pour terminer.
+exten => s,n,set(sofie_msg_menu_gerer_absence2=msg_signaler_reprise);Tapez 2 pour confirmer une reprise de service sinon veuillez raccrochez pour terminer.
+
+;[sofie_signaler_absence]
+exten => s,n,set(sofie_msg_saisie_num_interim=msg_saisie_num_interim)
+exten => s,n,set(sofie_msg_erreur_num_interim=msg_erreur_num_interim)
+;exten => s,n,set(sofie_msg_touche_correction_invalid=msg_touche_correction_invalid)
+;exten => s,n,set(sofie_msg_system_error=msg_system_error)
+exten => s,n,set(sofie_msg_absence_enreg=msg_absence_enreg)
+
+;[sofie_signaler_reprise]
+exten => s,n,set(sofie_msg_menu_reprise=msg_menu_reprise);Pour confirmer une reprise de service tapez 1 sinon raccrochez pour terminer.
+exten => s,n,set(sofie_msg_reprise_enreg=msg_reprise_enreg);Votre notification de reprise de service a ete enregistre.
+
+;[sofie_alert]
+exten => s,n,set(sofie_msg_fonctionement_bv=msg_fonctionement_bv)
+exten => s,n,set(sofie_msg_fonctionnement_clc=msg_fonctionnement_clc)
+exten => s,n,set(sofie_msg_touche_invalid=msg_touche_invalid)
+exten => s,n,set(sofie_msg_aucune_reponse=msg_aucune_reponse)
+exten => s,n,set(sofie_msg_code_nonvalide2=msg_code_nonvalide2)
+
+;[sofie_code_susie_kit]
+exten => s,n,set(sofie_msg_saisie_code_susie_kit=msg_saisie_code_susie_kit)
+exten => s,n,set(sofie_msg_code_susie_kit_non_valide=msg_code_susie_kit_non_valide)
+
+;[macro-sofie_saisie_date_donnee]
+exten => s,n,set(sofie_msg_saisie_date_donnee=msg_saisie_date_donnee)
+;exten => s,n,set(sofie_msg_date_donnee_non_valide=msg_date_donnee_non_valide)
+exten => s,n,set(sofie_msg_date_donnee_non_valide=msg_erreur_saisie)
+
+;[sofie_saisie_incidents]
+exten => s,n,set(sofie_msg_saisie_code_incident=msg_saisie_code_incident)
+exten => s,n,set(sofie_msg_saisie_code_incidents_susie=msg_saisie_code_incidents_susie)
+
+;[sofie_saisie_incident_mat]
+exten => s,n,set(sofie_msg_saisie_code_incident_mat=msg_saisie_code_incident_mat)
+exten => s,n,set(sofie_msg_saisie_code_pannes=msg_saisie_code_pannes)
+
+;[sofie_audio-sofie_saisie_code_secret]
+exten => s,n,set(sofie_msg_saisie_code_secret=msg_saisie_code_secret3) ;invite a saisir un mot de passe
+exten => s,n,set(sofie_msg_msg_aucune_reponse=msg_aucune_reponse) ;message erreur format mot de passe
+exten => s,n,set(sofie_msg_erreur_saisie=msg_erreur_saisie) ;message erreur format mot de passe
+exten => s,n,set(sofie_msg_pwd_nonvalide=msg_pwd_nonvalide) ;message en cas de mot de passe erroné
+
+;[sofie_audio-sofie_chg_code_secret]
+exten => s,n,set(sofie_msg_saisie_nouveau_pass=msg_saisie_nouveau_pass3) ;invite a saisir un nouveau mot de passe
+
+;[sofie_audio-sofie_init_numcrv]
+exten => s,n,set(sofie_msg_saisie_num_crv=msg_saisie_num_crv) ;invite a saisie un numero de bv
+exten => s,n,set(sofie_msg_num_crv_deja_init=msg_num_crv_deja_init) ;invite a saisie un numero de bv
+exten => s,n,set(sofie_msg_saisie_num_crv=msg_saisie_num_crv) ;invite a saisie un numero de bv
+exten => s,n,set(sofie_msg_num_crv_non_valide=msg_num_crv_non_valide) ;invite a saisie un numero de bv
+
+
+;[sofie_audio-sofie_init_numbv]
+exten => s,n,set(sofie_msg_saisie_num_kit=msg_saisie_num_kit) ;invite a saisie un numero de kit
+exten => s,n,set(sofie_msg_saisie_num_crv=msg_saisie_num_crv) ;invite a saisie un numero de bv
+exten => s,n,set(sofie_msg_saisie_numero_bv=msg_saisie_numero_bv) ;invite a saisie un numero de bv
+exten => s,n,set(sofie_msg_saisie_code_sofie_kit=msg_saisie_code_sofie_kit) ;invite a saisie un numero de bv
+exten => s,n,set(sofie_msg_corrige_saisie=msg_corrige_saisie) ;msg saisir touche * pour corriger
+exten => s,n,set(sofie_msg_touche_correction_invalid=msg_touche_correction_invalid) ;msg touche correction erroné
+exten => s,n,set(sofie_msg_numbv_deja=msg_numbv_deja2) ;msg numero bv saisi est deja initialisé
+exten => s,n,set(sofie_msg_numbv_nonvalide=msg_numbv_nonvalide) ;msg numero bv saisi est invalide
+exten => s,n,set(sofie_msg_erreur_init=msg_erreur_init) ;msg erreur lors de l'initialisation
+exten => s,n,set(sofie_msg_initialisation_effectue=msg_initialisation_effectue) ;msg initialisation effectuees avec succes
+exten => s,n,set(sofie_msg_confirmation_init=msg_confirmation_init) ;msg initialisation effectuees avec succes
+
+;[sofie_audio-sofie_services]
+exten => s,n,set(sofie_msg_menu_susie=msg_menu_susie) ;menu choix de service (saisir les resultats ou ecouter des infos)
+exten => s,n,set(sofie_msg_touche_invalid=msg_touche_invalid) ;msg touche de choix non valide
+
+;[macro-svi_menu_choix]
+exten => s,n,set(sofie_msg_sofie_var_choix_1=msg_sofie_var_choix_1)
+exten => s,n,set(sofie_msg_sofie_var_choix_2=msg_sofie_var_choix_2)
+exten => s,n,set(sofie_msg_sofie_var_choix_3=msg_sofie_var_choix_3)
+exten => s,n,set(sofie_msg_sofie_var_choix_4=msg_sofie_var_choix_4)
+exten => s,n,set(sofie_msg_sofie_var_choix_5=msg_sofie_var_choix_5)
+exten => s,n,set(sofie_msg_touche_invalid=msg_touche_invalid)
+exten => s,n,set(sofie_msg_aucune_reponse=msg_aucune_reponse)
+
+;[sofie_audio-sofie_getresult_1]
+exten => s,n,set(sofie_msg_donnees_deja_remontees=msg_donnees_deja_remontees) ;msg données deja remontées
+exten => s,n,set(sofie_msg_infos_saisie_resultat=msg_infos_saisie_resultat) ;msg infos sur la saisie de données
+
+;[sofie_audio-sofie_infos]
+exten => s,n,set(sofie_msg_infos_services=msg_infos_services) ; msg infos générales sur les services
+exten => s,n,set(sofie_reecouter_infos_services=reecouter_infos_services3)
+
+;[sofie_audio-sofie_saisie_nb_incrit]
+exten => s,n,set(sofie_msg_saisie_nb_inscrit=msg_saisie_nb_inscrit3); msg invite a saisir le nombre d'inscrit
+exten => s,n,set(sofie_msg_erreur_touche=msg_erreur_touche)
+
+;[sofie_audio-sofie_saisie_nb_votant]
+exten => s,n,set(sofie_msg_saisie_nb_votant=msg_saisie_nb_votant3); msg invite a saisir le nombre de votant
+
+;[sofie_audio-sofie_saisie_nb_bulletin_nul]
+exten => s,n,set(sofie_msg_saisie_nb_bulletin_nul=msg_saisie_nb_bulletin_nul3); msg invite a saisir le nombre de bulletin null
+
+;[sofie_audio-sofie_saisie_suffrage_exprime]
+exten => s,n,set(sofie_msg_saisie_suffrage_exprime=msg_saisie_suffrage_exprime3); msg invite a saisir du suffrage exprimé
+
+;[sofie_saisie_nb_carte_del]
+exten => s,n,set(sofie_msg_saisie_nb_carte_del=msg_saisie_nb_carte_del); msg invite a saisir le nombre de carte délivré
+
+;[sofie_saisie_total_elect_rec]
+exten => s,n,set(sofie_msg_saisie_nb_elect_rec=msg_saisie_nb_elect_rec); msg invite a saisir le nombre d'électeur recensé
+
+;[sofie_saisie_nb_elect_femme]
+exten => s,n,set(sofie_msg_saisie_nb_elect_femme=msg_saisie_nb_elect_femme); msg invite a saisir le nombre d'électeur femme
+
+;[sofie_saisie_nb_elect_homme]
+exten => s,n,set(sofie_msg_saisie_nb_elect_homme=msg_saisie_nb_elect_homme); msg invite a saisir le nombre d'électeur homme
+
+;[sofie_audio-sofie_finappel]
+exten => s,n,set(sofie_msg_fin=msg_sofie_fin); msg au revoir
+exten => s,n,set(sofie_msg_tentative_epuise=msg_tentative_epuise); msg nombre de tentative epuisé.
+exten => s,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+

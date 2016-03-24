@@ -1,0 +1,535 @@
+[sofie_svi]; NB: nombre de connexion a mysql doit être > au nombre de ligne.
+exten => _X.,1,answer()
+exten => _X.,2,Macro(sofie_general_parameters)
+exten => _X.,3,GotoIf($["${ENABLE_BLACKLIST}"="TRUE"]?:check_whitelist)
+exten => _X.,4,GotoIf(${BLACKLIST()}?exit_system)
+exten => _X.,5(check_whitelist),GotoIf($["${ENABLE_WHILELIST}"="TRUE"]?:no_check_whitelist)
+exten => _X.,6,Macro(sofie_sql_check_whitelist,${CALLERID(Num)})
+exten => _X.,107,goto(exit_system)
+exten => _X.,7(no_check_whitelist),Set(CHANNEL(language)=fr)
+;exten => _X.,8,Macro(sofie_sql_suiviappel,CONN1,${UNIQUEID},0,${CALLERID(Num)},1,0)
+exten => _X.,8,playback(${sofie_audio_file_dir}/${sofie_msg_accueil})
+exten => _X.,n,goto(sofie_init,s,1)
+exten => _X.,n(exit_system),hangup
+
+[sofie_init]
+;exten => s,1,Macro(sofie_sql_suiviappel,CONN1,${UNIQUEID},2,${CALLERID(Num)},2,0)
+exten => s,1,noop()
+exten => s,502,goto(sofie_finappel,s,1)
+exten => s,2,Macro(sofie_sql_get_profil_status,CONN1,${CALLERID(Num)},sofie_PROFILE)
+exten => s,103,goto(sofie_standard_init,s,1)
+exten => s,3,noop(sofie_PROFILE=${sofie_PROFILE})
+exten => s,4,gotoif($["${sofie_PROFILE}" = "NULL"]?GOTO_CHOICE_PROFILE:GOTO_PROFILE)
+exten => s,n(GOTO_CHOICE_PROFILE),goto(sofie_standard_init,s,1)
+exten => s,n(GOTO_PROFILE),goto(sofie_services,s,1)
+
+[sofie_standard_init]
+exten => s,1,set(ARRAY(sofie_standard_init_local_CPT,sofie_PROFILE)=0,0)
+exten => s,2(REPRISE_SAISIE),Macro(svi_saisie_code,${sofie_audio_file_dir},${sofie_msg_saisie_num_forage},${sofie_msg_erreur_saisie},${sofie_LEN_NUM_FORAGE_MAX},${sofie_LEN_NUM_FORAGE_MIN},${sofie_msg_aucune_reponse},${sofie_msg_corrige_saisie},${sofie_msg_touche_correction_invalid},sofie_NUM_FORAGE_INIT,sofie_standard_init_local_CPT)
+exten => s,103,goto(sofie_finappel,cptfin,1)
+exten => s,203,goto(sofie_finappel,s,1)
+exten => s,3,set(sofie_PROFILE=${sofie_NUM_FORAGE_INIT:0:1})
+exten => s,4,goto(s-verif_init,1)
+
+exten => s-verif_init,1,Macro(sofie_sql_verif_init_code_user,CONN1,${sofie_NUM_FORAGE_INIT},${sofie_NUM_FORAGE_INIT:0:1})
+exten => s-verif_init,102,playback(${sofie_audio_file_dir}/${sofie_msg_code_forage_deja_init})
+exten => s-verif_init,103,goto(s,REPRISE_SAISIE)
+exten => s-verif_init,202,playback(${sofie_audio_file_dir}/${sofie_msg_code_forage_non_valide})
+exten => s-verif_init,203,goto(s,REPRISE_SAISIE)
+exten => s-verif_init,302,playback(${sofie_audio_file_dir}/${msg_erreur_init})
+exten => s-verif_init,303,hangup
+exten => s-verif_init,2,goto(s-init,1)
+
+exten => s-init,1,Macro(sofie_sql_init_forage_number,CONN1,${CALLERID(Num)},${sofie_NUM_FORAGE_INIT})
+exten => s-init,102,playback(${sofie_audio_file_dir}/${sofie_msg_code_forage_non_valide})
+exten => s-init,103,goto(sofie_finappel,s,1)
+exten => s-init,2,goto(s-insert_whitelist,1)
+exten => s-init,n(INIT_OK),playback(${sofie_audio_file_dir}/${sofie_msg_initialisation_effectue})
+exten => s-init,n,playback(${sofie_audio_file_dir}/${sofie_msg_confirmation_init})
+exten => s-init,n,goto(sofie_finappel,s,1)
+
+exten => s-insert_whitelist,1,Macro(sofie_sql_insert_whitelist,${CALLERID(Num)})
+exten => s-insert_whitelist,102,hangup
+exten => s-insert_whitelist,2,goto(s-notif-sms-init,1)
+
+exten => s-notif-sms-init,1,gotoif($["${sofie_PROFILE}" = "1"]?GOTO_COMITE_EAU:$[${PRIORITY}+1])
+exten => s-notif-sms-init,2,gotoif($["${sofie_PROFILE}" = "2"]?GOTO_REPARATEUR:$[${PRIORITY}+1])
+exten => s-notif-sms-init,3,gotoif($["${sofie_PROFILE}" >= "3"]?GOTO_AGENT:ERREUR_SYSTEM)
+exten => s-notif-sms-init,4(GOTO_COMITE_EAU),Macro(sofie_sql_get_forage_infos_by_comite_phonenum,${CALLERID(Num)},sofie_CODE_FORAGE,sofie_IDLOCALITE,sofie_LIB_LOCALITE,sofie_NOM_COMITE,sofie_NUMERO_COMITE,sofie_NUMERO_REPARATEUR,sofie_NUMERO_AGENT,sofie_NUMERO_SOCIOLOGUE,sofie_NUMERO_DR,sofie_NOM_REPARATEUR,sofie_NOM_AGENT,sofie_NOM_SOCIOLOGUE,sofie_NOM_DR,sofie_STATUTOUVRAGE,sofie_FORAGE_VALIDATED,sofie_NUMERO_PANNE)
+exten => s-notif-sms-init,105,playback(${sofie_audio_file_dir}/${msg_erreur_init})
+exten => s-notif-sms-init,5,Macro(sofie_send_notifcation,notif-sms-init-comite,100,0,1,1)
+exten => s-notif-sms-init,106,goto(SYSTEM_ERROR)
+exten => s-notif-sms-init,6,goto(s-init,INIT_OK)
+exten => s-notif-sms-init,7(GOTO_REPARATEUR),Macro(sofie_sql_get_forage_infos_by_rep_phonenum,${CALLERID(Num)},sofie_NOM_REPARATEUR)
+exten => s-notif-sms-init,108,goto(SYSTEM_ERROR)
+exten => s-notif-sms-init,8,Macro(sofie_send_notifcation,notif-sms-init-rep,100,0,1,1)
+exten => s-notif-sms-init,109,goto(SYSTEM_ERROR)
+exten => s-notif-sms-init,9,goto(s-init,INIT_OK)
+exten => s-notif-sms-init,10(GOTO_AGENT),Macro(sofie_sql_get_forage_infos_by_agent_phonenum,${CALLERID(Num)},sofie_NOM_AGENT)
+exten => s-notif-sms-init,111,goto(SYSTEM_ERROR)
+exten => s-notif-sms-init,11,Macro(sofie_send_notifcation,notif-sms-init-agent,100,0,1,1)
+exten => s-notif-sms-init,112,goto(SYSTEM_ERROR)
+exten => s-notif-sms-init,12,goto(s-init,INIT_OK)
+exten => s-notif-sms-init,n(SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+
+[sofie_services]
+exten => s,1,noop(sofie_PROFILE:${sofie_PROFILE})
+exten => s,2,gotoif($["${sofie_PROFILE}" = "1"]?GOTO_COMITE_EAU:$[${PRIORITY}+1])
+exten => s,3,gotoif($["${sofie_PROFILE}" = "2"]?GOTO_REPARATEUR:$[${PRIORITY}+1])
+exten => s,4,GotoIf($[${MATH(${sofie_PROFILE} >= 3)}=TRUE]?GOTO_AGENT:ERREUR_SYSTEM)
+exten => s,n(GOTO_COMITE_EAU),goto(sofie_comite_eau,s,1)
+exten => s,n(GOTO_REPARATEUR),goto(sofie_reparateur,s,1)
+exten => s,n(GOTO_AGENT),goto(sofie_agent,s,1)
+
+
+[sofie_comite_eau]
+;exten => s,1,Macro(sofie_sql_suiviappel,CONN1,${UNIQUEID},3,${CALLERID(Num)},1,0)
+exten => s,1,set(sofie_comite_eau_local_CPT=0)
+exten => s,2,Macro(sofie_sql_get_forage_infos_by_comite_phonenum,${CALLERID(Num)},sofie_CODE_FORAGE,sofie_IDLOCALITE,sofie_LIB_LOCALITE,sofie_NOM_COMITE,sofie_NUMERO_COMITE,sofie_NUMERO_REPARATEUR,sofie_NUMERO_AGENT,sofie_NUMERO_SOCIOLOGUE,sofie_NUMERO_DR,sofie_NOM_REPARATEUR,sofie_NOM_AGENT,sofie_NOM_SOCIOLOGUE,sofie_NOM_DR,sofie_STATUTOUVRAGE,sofie_FORAGE_VALIDATED,sofie_NUMERO_PANNE)
+exten => s,203,goto(ss,ACCES_REFUSE2)
+exten => s,3,goto(ss,1)
+
+exten => ss,1,set(sofie_DIGIT=0)
+exten => ss,2,noop(sofie_STATUTOUVRAGE=${sofie_STATUTOUVRAGE})
+exten => ss,3,GotoIf($[${MATH(${sofie_FORAGE_VALIDATED}==0)}=TRUE]?ACCES_REFUSE2:$[${PRIORITY}+1])
+exten => ss,4,GotoIf($[${sofie_STATUTOUVRAGE}='-1']?ACCES_REFUSE2:$[${PRIORITY}+1])
+exten => ss,5,GotoIf($["${sofie_STATUTOUVRAGE}" = "NULL"]?ACCES_REFUSE:$[${PRIORITY}+1])
+exten => ss,6,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==0)}=TRUE]?GOTO_CASE1:$[${PRIORITY}+1])
+exten => ss,7,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==6)}=TRUE]?GOTO_CASE3:$[${PRIORITY}+1])
+exten => ss,8,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==1)}=TRUE]?GOTO_CASE2:GOTO_CASE1)
+exten => ss,n(GOTO_CASE1),set(sofie_DIGIT=3)
+exten => ss,n,set(sofie_ENABLED_DIGIT=2-3)
+exten => ss,n,goto(s,4)
+exten => ss,n(GOTO_CASE2),set(sofie_DIGIT=1)
+exten => ss,n,set(sofie_ENABLED_DIGIT=1)
+exten => ss,n,goto(s,4)
+exten => ss,n(GOTO_CASE3),set(sofie_DIGIT=2)
+exten => ss,n,set(sofie_ENABLED_DIGIT=2)
+exten => ss,n,goto(s,4)
+exten => ss,n(ACCES_REFUSE),goto(sofie_standard_init,s,1)
+exten => ss,n(ACCES_REFUSE2),playback(${sofie_audio_file_dir}/${sofie_msg_acces_refuse})
+exten => ss,n,goto(sofie_finappel,s,1)
+
+exten => s,4,Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_comite_eau${sofie_DIGIT}},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_ENABLED_DIGIT}])
+exten => s,105,goto(sofie_finappel,cptfin,1)
+exten => s,5(GO_ENREG_FORM),goto(sofie_enreg_incidents,s,1)
+exten => s,6(ERREUR_SAISIE),set(sofie_comite_eau_local_CPT=$[${sofie_comite_eau_local_CPT}+1])
+exten => s,n,GotoIf($[${MATH(${sofie_comite_eau_local_CPT}<=3)}=TRUE]?GOTO_REPRISE_SAISIE:FIN_TENTATIVE)
+exten => s,n(GOTO_REPRISE_SAISIE),playback(${sofie_audio_file_dir}/${sofie_msg_erreur_saisie})
+exten => s,n,goto(s,2)
+exten => s,n(FIN_TENTATIVE),goto(sofie_finappel,cptfin,1)
+
+[macro-sofie_enreg_new_panne]
+exten => s,1,Macro(sofie_sql_new_panne,CONN1,${ARG1},${ARG2},${ARG3},${ARG4},${ARG5},${ARG6})
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,103,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_enreg_panne_reparer_by_num_comite]
+exten => s,1,Macro(sofie_sql_update_panne_by_num_comite,CONN1,${ARG1},1)
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,103,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_enreg_panne_nonreparer_by_num_comite]
+exten => s,1,Macro(sofie_sql_update_panne_by_num_comite,CONN1,${ARG1},6)
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,103,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_enreg_panne_reparer2]
+exten => s,1,Macro(sofie_sql_update_panne,CONN1,P_UPDATE_PANNE,\'\${CALLERID(Num)}\'\,\'${ARG1}\'\,\'PANNE_REPARER\'\,1\,0\,\@_UPDATE_RESULT)
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,103,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_enreg_panne_nonreparer]
+exten => s,1,Macro(sofie_sql_update_panne,CONN1,P_UPDATE_PANNE,\'\${CALLERID(Num)}\'\,\'${ARG1}\'\,\'PANNE_NONREPARER\'\,1\,0\,\@_UPDATE_RESULT)
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,103,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[sofie_reparateur]
+exten => s,1,set(ARRAY(sofie_var_choix,sofie_NUMERO_PANNE,sofie_reparateur_local_CPT,sofie_INIT_CODE)=0\,\,0\,0)
+exten => s,2(REPRISE_SAISIE),Macro(svi_saisie_code,${sofie_audio_file_dir},${sofie_msg_saisie_num_ticket_panne},${sofie_msg_erreur_saisie},${sofie_LEN_NUM_TICKET_MAX},${sofie_LEN_NUM_TICKET_MIN},${sofie_msg_aucune_reponse},${sofie_msg_corrige_saisie},${sofie_msg_touche_invalid},sofie_NUMERO_PANNE,sofie_reparateur_local_CPT)
+exten => s,103,goto(sofie_finappel,cptfin,1)
+exten => s,203,goto(sofie_finappel,s,1)
+exten => s,3,goto(s-ifexist_num,1)
+
+exten => s-ifexist_num,1,Macro(sofie_sql_ifexist_num_panne,${sofie_NUMERO_PANNE})
+exten => s-ifexist_num,102,playback(${sofie_audio_file_dir}/${sofie_msg_saisie_num_ticket_panne_non_valide})
+exten => s-ifexist_num,103,goto(s,REPRISE_SAISIE)
+exten => s-ifexist_num,202,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-ifexist_num,203,goto(sofie_finappel,s,1)
+exten => s-ifexist_num,2,goto(s-get_forage_infos,1)
+
+exten => s-get_forage_infos,1,Macro(sofie_sql_get_forage_infos_by_num_panne,${sofie_NUMERO_PANNE},sofie_CODE_FORAGE,sofie_IDREGION_OUVRAGE,sofie_NOMLOCALITE,sofie_NUMERO_REPARATEUR,sofie_NUMERO_AGENT,sofie_NUMERO_SOCIOLOGUE,sofie_NUMERO_COMITE,sofie_NOMREP,sofie_NOMAGENT_FORMA,sofie_NOM_SOCIOLOGUE,sofie_STATUTOUVRAGE)
+exten => s-get_forage_infos,102,playback(${sofie_audio_file_dir}/${msg_erreur_init})
+exten => s-get_forage_infos,103,goto(sofie_finappel,s,1)
+exten => s-get_forage_infos,2,goto(s-verif_init,1)
+
+exten => s-verif_init,1,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==6)}=TRUE]?GOTO_CASE2:GOTO_CASE1)
+exten => s-verif_init,2(GOTO_CASE1),set(sofie_CHOIX_MENU=2)
+exten => s-verif_init,n,set(sofie_ENABLED_DIGIT=1-2)
+exten => s-verif_init,n,Goto(GOTO_MENU_REP)
+exten => s-verif_init,n(GOTO_CASE2),set(sofie_CHOIX_MENU=1)
+exten => s-verif_init,n,set(sofie_ENABLED_DIGIT=1)
+exten => s-verif_init,7(GOTO_MENU_REP),Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_reparateur${sofie_CHOIX_MENU}},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_ENABLED_DIGIT}])
+exten => s-verif_init,108,goto(sofie_finappel,cptfin,1)
+exten => s-verif_init,8,gotoif($["${sofie_var_choix}" = "1"]?$[${PRIORITY}+2]:$[${PRIORITY}+1])
+exten => s-verif_init,n,gotoif($["${sofie_var_choix}" = "2"]?s,GOTO_MENU_NONREPARTION:ERREUR_SYSTEM)
+exten => s-verif_init,n,GotoIf($[${MATH(${CALLERID(Num)} == ${sofie_NUMERO_REPARATEUR})}=TRUE]?$[${PRIORITY}+3]:$[${PRIORITY}+1])
+exten => s-verif_init,n(ACCES_REFUSE),playback(${sofie_audio_file_dir}/${sofie_msg_acces_refuse})
+exten => s-verif_init,n,goto(sofie_finappel,s,1)
+exten => s-verif_init,n,goto(s-ifexist_cde,1)
+exten => s-verif_init,n(SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-verif_init,n(FIN_APPEL),goto(sofie_finappel,s,1)
+
+exten => s-ifexist_cde,1,gotoif($["${sofie_CHOIX_MENU}" = "1"]?CONFIRMATION_CDE:$[${PRIORITY}+1]])
+exten => s-ifexist_cde,n,gotoif($["${TICKET_PANNE_STATUS}" = "3"]?$[${PRIORITY}+1]:CONFIRMATION_CDE)
+exten => s-ifexist_cde,n,playback(${sofie_audio_file_dir}/${sofie_msg_commande_existe})
+exten => s-ifexist_cde,n,goto(sofie_finappel,s,1)
+exten => s-ifexist_cde,n(CONFIRMATION_CDE),goto(s,GOTO_CONFIRMATION_CDE)
+
+exten => s,n(GOTO_MENU_NONREPARTION),goto(sofie_enreg_incidents,s-panne_nonreparer,1)
+exten => s,n(GOTO_CONFIRMATION_CDE),goto(sofie_confirmation_cde,s,1)
+
+[sofie_agent]
+exten => s,1,set(ARRAY(sofie_var_choix,sofie_NUMERO_PANNE,sofie_agent_local_CPT)=0\,\,0)
+exten => s,n,gotoif($["${sofie_PROFILE}" = "3"]?GOTO_MENU_AGENT1:$[${PRIORITY}+1])
+exten => s,n,gotoif($["${sofie_PROFILE}" = "4"]?GOTO_MENU_SOCIOLOGUE:$[${PRIORITY}+1])
+exten => s,n(GOTO_MENU_AGENT1),goto(s-menu-agent,1)
+exten => s,5(GOTO_MENU_SOCIOLOGUE1),goto(s-menu-sociologue,1)
+
+exten => s-menu-agent,1,set(sofie_AGENT_MENU=1)
+exten => s-menu-agent,n,set(sofie_ENABLED_DIGIT=1-2)
+exten => s-menu-agent,3,Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_agent${sofie_AGENT_MENU}},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_ENABLED_DIGIT}])
+exten => s-menu-agent,104,goto(sofie_finappel,cptfin,1)
+exten => s-menu-agent,4,goto(s-menu-agent-selected1,1)
+
+exten => s-menu-agent-selected1,1,gotoif($["${sofie_var_choix}" = "1"]?GOTO_SAISIE_NUMERO_PANNE:$[${PRIORITY}+1])
+exten => s-menu-agent-selected1,n,gotoif($["${sofie_var_choix}" = "2"]?GOTO_GERER_ABSENCE:ERREUR_SYSTEM)
+exten => s-menu-agent-selected1,n(GOTO_SAISIE_NUMERO_PANNE),goto(s,SAISIE_NUMERO_PANNE)
+exten => s-menu-agent-selected1,n(GOTO_GERER_ABSENCE),goto(s,GOTO_GERER_ABSENCE)
+
+exten => s-menu-sociologue,1,set(sofie_SOCIO_MENU=1)
+exten => s-menu-sociologue,n,set(sofie_ENABLED_DIGIT=1)
+exten => s-menu-sociologue,3,Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_sociologue${sofie_SOCIO_MENU}},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_ENABLED_DIGIT}])
+exte => s-menu-sociologue,104,goto(sofie_finappel,cptfin,1)
+exten => s-menu-sociologue,4,goto(s-menu-socio-selected1,1)
+
+exten => s-menu-socio-selected1,1,gotoif($["${sofie_var_choix}" = "1"]?GOTO_MENU_SOCIOLOGUE2:$[${PRIORITY}+1])
+exten => s-menu-socio-selected1,n,gotoif($["${sofie_var_choix}" = "2"]?GOTO_GERER_ABSENCE:ERREUR_SYSTEM)
+exten => s-menu-socio-selected1,n(GOTO_MENU_SOCIOLOGUE2),goto(s,MENU_SOCIOLOGUE2)
+exten => s-menu-socio-selected1,n(GOTO_GERER_ABSENCE),goto(s,GOTO_GERER_ABSENCE)
+
+exten => s,6(SAISIE_NUMERO_PANNE),Macro(svi_saisie_code,${sofie_audio_file_dir},${sofie_msg_saisie_num_ticket_panne},${sofie_msg_erreur_saisie},${sofie_LEN_NUM_TICKET_MAX},${sofie_LEN_NUM_TICKET_MIN},${sofie_msg_aucune_reponse},${sofie_msg_corrige_saisie},${sofie_msg_touche_correction_invalid},sofie_NUMERO_PANNE,sofie_agent_local_CPT)
+exten => s,107,goto(sofie_finappel,cptfin,1)
+exten => s,207,goto(sofie_finappel,s,1)
+exten => s,7,goto(s-ifexist_num,1)
+
+exten => s,n(MENU_SOCIOLOGUE2),Noop()
+exten => s,n,hangup()
+
+exten => s-ifexist_num,1,Macro(sofie_sql_ifexist_num_panne,${sofie_NUMERO_PANNE})
+exten => s-ifexist_num,102,playback(${sofie_audio_file_dir}/${sofie_msg_saisie_num_ticket_panne_non_valide})
+exten => s-ifexist_num,103,goto(s,SAISIE_NUMERO_PANNE)
+exten => s-ifexist_num,202,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-ifexist_num,203,goto(sofie_finappel,cptfin,1)
+exten => s-ifexist_num,2,goto(s-get_forage_infos,1)
+
+exten => s-get_forage_infos,1,Macro(sofie_sql_get_forage_infos_by_num_panne,${sofie_NUMERO_PANNE},sofie_CODE_FORAGE,sofie_IDREGION_OUVRAGE,sofie_NOMLOCALITE,sofie_NUMERO_REPARATEUR,sofie_NUMERO_AGENT,sofie_NUMERO_SOCIOLOGUE,sofie_NUMERO_COMITE,sofie_NOMREP,sofie_NOMAGENT_FORMA,sofie_NOM_SOCIOLOGUE,sofie_STATUTOUVRAGE)
+exten => s-get_forage_infos,102,playback(${sofie_audio_file_dir}/${msg_erreur_init})
+exten => s-get_forage_infos,103,goto(sofie_finappel,s,1)
+exten => s-get_forage_infos,2,goto(s-verif_init,1)
+
+exten => s-verif_init,1,Macro(sofie_sql_getRegionIdByCodeOuvrage,${sofie_CODE_FORAGE},sofie_IDREGION_AGENT)
+exten => s-verif_init,102,goto(SYSTEM_ERROR)
+exten => s-verif_init,2,GotoIf($[${MATH(${sofie_IDREGION_AGENT} == ${sofie_IDREGION_OUVRAGE})}=TRUE]?$[${PRIORITY}+3]:$[${PRIORITY}+1])
+exten => s-verif_init,3,playback(${sofie_audio_file_dir}/${sofie_msg_acces_refuse})
+exten => s-verif_init,4,goto(sofie_finappel,s,1)
+exten => s-verif_init,5,goto(s-choix-menu,1)
+exten => s-verif_init,n(SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-verif_init,n,goto(sofie_finappel,s,1)
+
+exten => s-choix-menu,1,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==6)}=TRUE]?GOTO_CASE1:GOTO_CASE2)
+exten => s-choix-menu,n(GOTO_CASE2),set(sofie_AGENT_MENU=3)
+exten => s-choix-menu,n,set(sofie_ENABLED_DIGIT=1-2)
+exten => s-choix-menu,n,goto(s-menu-agent-selected2,1)
+exten => s-choix-menu,n(GOTO_CASE1),set(sofie_AGENT_MENU=2)
+exten => s-choix-menu,n,set(sofie_ENABLED_DIGIT=1)
+exten => s-choix-menu,n,goto(s-menu-agent-selected2,1)
+
+exten => s-menu-agent-selected2,1,Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_agent${sofie_AGENT_MENU}},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_ENABLED_DIGIT}])
+exten => s-menu-agent-selected2,102,goto(sofie_finappel,cptfin,1)
+exten => s-menu-agent-selected2,2,goto(s-menu-selected2,1)
+
+exten => s-menu-selected2,1,gotoif($["${sofie_var_choix}" = "1"]?s-ifexist_cde,1:$[${PRIORITY}+1])
+exten => s-menu-selected2,n,gotoif($["${sofie_var_choix}" = "2"]?s,GOTO_SIGNALER_NONREPARATION:$[${PRIORITY}+1])
+
+exten => s-ifexist_cde,1,GotoIf($[${MATH(${TICKET_PANNE_STATUS} >= 4)}=TRUE]?$[${PRIORITY}+1]:MENU_AGENT)
+exten => s-ifexist_cde,n,GotoIf($[${MATH(${sofie_STATUTOUVRAGE} == 6)}=TRUE]?MENU_AGENT:$[${PRIORITY}+1])
+exten => s-ifexist_cde,n,GotoIf($[${MATH(${sofie_NUMERO_AGENT} == ${CALLERID(Num)})}=TRUE]?GOTO_CDE_EXIST:MENU_AGENT)
+exten => s-ifexist_cde,n,GotoIf($[${MATH(${sofie_NUMERO_SOCIOLOGUE} == ${CALLERID(Num)})}=TRUE]?GOTO_CDE_EXIST:MENU_AGENT)
+exten => s-ifexist_cde,n(GOTO_CDE_EXIST),playback(${sofie_audio_file_dir}/${sofie_msg_commande_existe})
+exten => s-ifexist_cde,n,goto(sofie_finappel,s,1)
+exten => s-ifexist_cde,n(MENU_AGENT),goto(s,GOTO_CONFIRMATION_CDE)
+
+exten => s,10(GOTO_CONFIRMATION_CDE),goto(sofie_confirmation_cde,s,1)
+exten => s,11(GOTO_SIGNALER_NONREPARATION),goto(sofie_enreg_incidents,s-panne_nonreparer,1)
+exten => s,12(GOTO_SIGNALER_REPARATION),goto(sofie_signaler_reparation,s,1)
+exten => s,13(GOTO_GERER_ABSENCE),goto(sofie_gerer_absence,s,1)
+
+[sofie_signaler_nonreparation]
+exten => s,1,set(sofie_AGENT_MENU=1)
+exten => s,n,set(sofie_ENABLED_DIGIT=1)
+exten => s,n,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==6)}=TRUE]?GOTO_MENU_NONREPARTION:$[${PRIORITY}+1])
+exten => s,n,set(sofie_AGENT_MENU=2)
+exten => s,n,set(sofie_ENABLED_DIGIT=2)
+exten => s,6,Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_agent},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_ENABLED_DIGIT}])
+exten => s,107,goto(sofie_finappel,cptfin,1)
+exten => s,7,GotoIf($[${MATH(${sofie_var_choix}==1)}=TRUE]?GOTO_MENU_NONREPARTION:$[${PRIORITY}+1])
+exten => s,7(GOTO_MENU_NONREPARTION),goto(sofie_enreg_incidents,s-panne_nonreparer,1)
+
+[sofie_confirmation_cde]
+exten => s,1,Macro(sofie_preprocess_enreg_prise_cde,${CALLERID(Num)},${sofie_NUMERO_PANNE},${sofie_CODE_FORAGE},${sofie_PROFILE},sofie_SQL_STORAGE_PROC_ARG)
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_commande_existe})
+exten => s,103,goto(sofie_finappel,s,1)
+exten => s,2(GOTO_PRISE_CDE),goto(s-enreg_prise_cde,1)
+
+exten => s-enreg_prise_cde,1,Macro(sofie_enreg_confirmation_cde,${sofie_SQL_STORAGE_PROC_ARG})
+exten => s-enreg_prise_cde,102,goto(sofie_finappel,s,1)
+exten => s-enreg_prise_cde,2,gotoif($["${sofie_PROFILE}" = "2"]?s-notif-sms-cde-rep,1:s-notif-sms-cde-agent,1)
+exten => s-enreg_prise_cde,3,playback(${sofie_audio_file_dir}/${sofie_msg_confirmation_cde${sofie_PROFILE}})
+exten => s-enreg_prise_cde,4,Macro(sofie_sql_get_delais,CONN1,sofie_DELAIS_PRISE_CDE,sofie_UNITE_DELAIS)
+exten => s-enreg_prise_cde,5,Macro(saynumber,${sofie_DELAIS_PRISE_CDE},fr)
+exten => s-enreg_prise_cde,6,playback(${sofie_audio_file_dir}/${sofie_msg_nb_${sofie_UNITE_DELAIS}_reparation})
+exten => s-enreg_prise_cde,7,goto(sofie_finappel,s,1)
+
+exten => s-notif-sms-cde-rep,1,Macro(sofie_send_notifcation,notif-sms-cde-rep,3,1,1)
+exten => s-notif-sms-cde-rep,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-notif-sms-cde-rep,2,goto(s-enreg_prise_cde,3)
+
+exten => s-notif-sms-cde-agent,1,Macro(sofie_send_notifcation,notif-sms-cde-agent,4,1,1)
+exten => s-notif-sms-cde-agent,103,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-notif-sms-cde-agent,2,goto(s-enreg_prise_cde,3)
+
+[macro-sofie_preprocess_enreg_prise_cde]
+exten => s,1,noop(sofie_SQL_STORAGE_PROC_ARG=${sofie_SQL_STORAGE_PROC_ARG})
+exten => s,n,set(sofie_SQL_STORAGE_PROC_ARG=)
+exten => s,n,set(sofie_DELAI_PRISE_CDE=0)
+exten => s,n,set(sofie_DELAI_REPARATION=0)
+exten => s,5,Macro(sofie_sql_verif_pise_cde,CONN1,${ARG2},${sofie_NB_JOURS_REPARATION},sofie_CDE_STATUS,sofie_DELAI_CDE_STATUS)
+exten => s,106,goto(GOTO_CDE_EXIST)
+exten => s,206,goto(s,GOTO_SYSTEM_ERROR)
+exten => s,6,goto(s-verif_delai,1)
+exten => s,n(GOTO_CDE_EXIST),goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,n(GOTO_SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,n,goto(sofie_finappel,s,1)
+
+exten => s-verif_delai,1,gotoif($["${sofie_DELAI_CDE_STATUS}"="NULL"]?GOTO_SYSTEM_ERROR:$[${PRIORITY}+1])
+exten => s-verif_delai,n,GotoIf($[${MATH(${ARG4}==2)}=TRUE]?s-verif_delai_1,1:$[${PRIORITY}+1])
+exten => s-verif_delai,n,GotoIf($[${MATH(${ARG4}>=3)}=TRUE]?s-verif_delai_2,1:GOTO_SYSTEM_ERROR)
+exten => s-verif_delai,n(GOTO_SYSTEM_ERROR),goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+201])
+
+exten => s-verif_delai_1,1,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==6)}=TRUE]?ENREG_CONFIRMATION_REPARATEUR:$[${PRIORITY}+1])
+exten => s-verif_delai_1,n,gotoif($[${MATH(${sofie_CDE_STATUS}==3)}=TRUE]?s,GOTO_CDE_EXIST:$[${PRIORITY}+1])
+exten => s-verif_delai_1,n,GotoIf($[${MATH(${sofie_DELAI_CDE_STATUS}==0)}=TRUE]?ENREG_CONFIRMATION_REPARATEUR:ENREG_CONFIRMATION_REPARATEUR_HORS_DELAI)
+exten => s-verif_delai_1,n(ENREG_CONFIRMATION_REPARATEUR),set(sofie_CODE_COULEUR=)
+exten => s-verif_delai_1,n,set(sofie_CODE_COULEUR=3)
+exten => s-verif_delai_1,n,set(${ARG5}=\'\${ARG1}\'\,\'\${ARG2}\'\,\'DEBUT_REP_PANNE\'\,\'1\'\,\${sofie_CODE_COULEUR\}\,\@_UPDATE_RESULT)
+exten => s-verif_delai_1,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+exten => s-verif_delai_1,n(ENREG_CONFIRMATION_REPARATEUR_HORS_DELAI),set(sofie_CODE_COULEUR=)
+exten => s-verif_delai_1,n(ENREG_CONFIRMATION_REPARATEUR_HORS_DELAI),set(sofie_CODE_COULEUR=3)
+exten => s-verif_delai_1,n,set(${ARG5}=\'\${ARG1}\'\,\'\${ARG2}\'\,\'DEBUT_REP_PANNE\'\,\'1\'\,${sofie_CODE_COULEUR\}\,\@_UPDATE_RESULT)
+exten => s-verif_delai_1,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+exten => s-verif_delai_2,1,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==6)}=TRUE]?ENREG_CONFIRMATION_CDE1:$[${PRIORITY}+1])
+exten => s-verif_delai_2,n,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}>=4)}=TRUE]?s,GOTO_CDE_EXIST:ENREG_CONFIRMATION_CDE1)
+exten => s-verif_delai_2,n(ENREG_CONFIRMATION_CDE1),set(sofie_CODE_COULEUR=)
+exten => s-verif_delai_2,n,set(sofie_CODE_COULEUR=4)
+exten => s-verif_delai_2,n,set(${ARG5}=\'\${ARG1}\'\,\'\${ARG2}\'\,\'PANNE_PRISE_CHARGE\'\,\'1\'\,\${sofie_CODE_COULEUR\}\,\@_UPDATE_RESULT)
+exten => s-verif_delai_2,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+exten => s-verif_delai_2,n(ENREG_CONFIRMATION_CDE2),set(sofie_CODE_COULEUR=)
+exten => s-verif_delai_2,n,set(sofie_CODE_COULEUR=6)
+exten => s-verif_delai_2,n,set(${ARG5}=\'\${ARG1}\'\,\'\${ARG2}\'\,\'PANNE_NONREPARE\'\,\'1\'\,\${sofie_CODE_COULEUR\}\,\@_UPDATE_RESULT)
+exten => s-verif_delai_2,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[sofie_signaler_reparation]
+exten => s,1,Macro(sofie_enreg_signaler_reparation,${sofie_NUMERO_PANNE})
+exten => s,102,goto(sofie_finappel,s,1)
+exten => s,2,goto(s-notif-sms-reparation,1)
+exten => s,3(REPARATION_OK),playback(${sofie_audio_file_dir}/${sofie_msg_confirmation_reparation})
+exten => s,4,goto(sofie_finappel,s,1)
+
+exten => s-notif-sms-reparation,1,System(lynx -dump "http://${sofie_SMS_IPSERVER}/sms/sendsms.php?SOA=${sofie_SMS_SHORTCODE}&DA=${CALLERID(Num)}&Osms=1&Modem=${sofie_SMS_NUM_MODEM}&Content=VOTRE NOTIFICATION DE REPARATION POUR LE FORAGE: ${sofie_CODE_FORAGE} A ETE ENREGISTRE LA DGEA VOUS REMERCIE.")
+exten => s-notif-sms-reparation,n,System(lynx -dump "http://${sofie_SMS_IPSERVER}/sms/sendsms.php?SOA=${sofie_SMS_SHORTCODE}&DA=${sofie_NUMERO_COMITE}&Osms=1&Modem=${sofie_SMS_NUM_MODEM}&Content=LE FORAGE: ${sofie_CODE_FORAGE} EST REPARER. LA DGEA VOUS REMERCIE.")
+exten => s-notif-sms-reparation,3,Macro(sofie_enreg_notification,CONN1,5,${sofie_NUMERO_PANNE},${CALLERID(Num)})
+exten => s-notif-sms-reparation,104,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-notif-sms-reparation,4,goto(s,REPARATION_OK)
+
+[macro-sofie_enreg_confirmation_cde]
+;exten => s,1,Macro(sofie_sql_update_panne,CONN1,P_UPDATE_PANNE,\'\${ARG1}\'\,\'DEBUT_REP_PANNE\'\,\'1\'\,1\,\@_UPDATE_RESULT)
+exten => s,1,Macro(sofie_sql_update_panne,CONN1,P_UPDATE_PANNE,${ARG1})
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,103,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_enreg_signaler_reparation]
+exten => s,1,Macro(sofie_enreg_panne_reparer2,${ARG1})
+exten => s,102,goto(sofie_finappel,s,1)
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[sofie_gerer_absence]
+exten => s,1,set(sofie_var_choix=0)
+exten => s,2,Macro(sofie_sql_get_agent_status,CONN1,${CALLERID(Num)},sofie_AGENT_STATUS)
+exten => s,103,goto(sofie_standard_init,s,1)
+exten => s,3,noop(sofie_AGENT_STATUS=${sofie_AGENT_STATUS})
+exten => s,4,Macro(svi_menu_choix,${sofie_audio_file_dir}/${sofie_msg_menu_gerer_absence${sofie_AGENT_STATUS}},sofie_var_choix,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},3,3,[${sofie_AGENT_STATUS}])
+exten => s,105,goto(sofie_finappel,cptfin,1)
+exten => s,5,gotoif($["${sofie_AGENT_STATUS}" = "1"]?GOTO_SIGNALER_ABSENCE:$[${PRIORITY}+1])
+exten => s,6,gotoif($["${sofie_AGENT_STATUS}" = "2"]?GOTO_SIGNALER_REPRISE:$[${PRIORITY}+1])
+exten => s,n(GOTO_SIGNALER_ABSENCE),goto(sofie_signaler_absence,s,1)
+exten => s,n(GOTO_SIGNALER_REPRISE),goto(sofie_signaler_reprise,s,1)
+
+[sofie_signaler_absence]
+exten => s,1,set(sofie_signaler_absence_local_CPT=0)
+exten => s,2(REPRISE_SAISIE),Macro(svi_saisie_code,${sofie_audio_file_dir},${sofie_msg_saisie_num_interim},${sofie_msg_erreur_saisie},${sofie_LEN_NUM_INTERIM_MAX},${sofie_LEN_NUM_INTERIM_MIN},${sofie_msg_aucune_reponse},${sofie_msg_corrige_saisie},${sofie_msg_touche_correction_invalid},sofie_NUM_INTERIM,sofie_signaler_absence_local_CPT)
+exten => s,102,goto(sofie_finappel,cptfin,1)
+exten => s,202,goto(sofie_finappel,s,1)
+exten => s,3,goto(s-verif_num_interim,1)
+
+exten => s-verif_num_interim,1,Macro(sofie_verif_num_interim,${CALLERID(Num)},${sofie_NUM_INTERIM})
+exten => s-verif_num_interim,202,goto(s,GOTO_SYSTEM_ERROR)
+exten => s-verif_num_interim,102,goto(s,GOTO_REPRISE_SAISIE)
+exten => s-verif_num_interim,2,Macro(sofie_enreg_absence,${CALLERID(Num)},${sofie_NUM_INTERIM})
+exten => s-verif_num_interim,3,goto(s-notif-sms-absence,1)
+
+exten => s,n(GOTO_REPRISE_SAISIE),set(sofie_signaler_absence_local_CPT=$[${sofie_signaler_absence_local_CPT}+1])
+exten => s,n,GotoIf($[${MATH(${sofie_signaler_absence_local_CPT}<=3)}=TRUE]?$[${PRIORITY}+1]:FIN_TENTATIVE)
+exten => s,n,playback(${sofie_audio_file_dir}/${sofie_msg_erreur_num_interim})
+exten => s,n,goto(REPRISE_SAISIE)
+exten => s,n(FIN_TENTATIVE),goto(sofie_finappel,cptfin,1)
+exten => s,n(SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,n,goto(sofie_finappel,s,1)
+
+exten => s-notif-sms-absence,1,Macro(sofie_enreg_notification,CONN1,7,0,${CALLERID(Num)})
+exten => s-notif-sms-absence,2,Macro(sofie_send_notifcation,notif-sms-absence,1,1)
+exten => s-notif-sms-absence,103,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-notif-sms-absence,3,goto(s-enreg_absence,1)
+
+exten => s-enreg_absence,1,playback(${sofie_audio_file_dir}/${sofie_msg_absence_enreg}
+exten => s-enreg_absence,n,goto(sofie_finappel,s,1)
+
+[sofie_signaler_reprise]
+exten => s,1(ENREG_REPRISE_AGENT),Macro(sofie_enreg_reprise,s,1)
+exten => s,n,goto(s-notif-sms-reprise,1)
+exten => s-notif-sms-reprise,1,Macro(sofie_enreg_notification,CONN1,8,0,${CALLERID(Num)})
+exten => s-notif-sms-reprise,2,Macro(sofie_send_notifcation,notif-sms-reprise,1,1)
+exten => s-notif-sms-reprise,3,noop()
+exten => s-notif-sms-reprise,104,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s-notif-sms-reprise,4,goto(s-enreg_reprise,1)
+
+exten => s-enreg_reprise,1,playback(${sofie_audio_file_dir}/${sofie_msg_reprise_enreg}
+exten => s-enreg_reprise,n,goto(sofie_finappel,s,1)
+
+[macro-sofie_verif_num_interim]
+exten => s,1,Macro(sofie_sql_verif_num_interim,CONN1,${ARG1},${ARG2})
+exten => s,202,goto(GOTO_SYSTEM_ERROR)
+exten => s,102,goto(GOTO_NUM_INTERIM_NON_VALIDE)
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+exten => s,n(GOTO_SYSTEM_ERROR),goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+201])
+exten => s,n(GOTO_NUM_INTERIM_NON_VALIDE),goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+101])
+
+[macro-sofie_enreg_reprise]
+exten => s,1,Macro(sofie_sql_restore_idagentforma_by_phonenum,CONN1,${CALLERID(Num)},sofie_NUM_INTERIM,sofie_NOM_AGENT)
+exten => s,102,goto(GOTO_SYSTEM_ERROR)
+exten => s,202,goto(GOTO_SYSTEM_ERROR)
+exten => s,2,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+exten => s,n(GOTO_SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,n,goto(sofie_finappel,s,1)
+
+[macro-sofie_enreg_absence]
+exten => s,1,Macro(sofie_sql_enreg_absence,CONN1,${ARG1},${ARG2})
+exten => s,102,goto(GOTO_SYSTEM_ERROR)
+exten => s,202,goto(GOTO_SYSTEM_ERROR)
+exten => s,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+exten => s,n(GOTO_SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,n,goto(sofie_finappel,s,1)
+
+[sofie_enreg_incidents];sofie_var_choix
+exten => s,1,GotoIf($[${MATH(${sofie_var_choix}==3)}=TRUE]?GOTO_PANNE_NONREPARER:$[${PRIORITY}+1])
+exten => s,n,GotoIf($["${sofie_STATUTOUVRAGE}" = "NULL"]?SYSTEM_ERROR:$[${PRIORITY}+1])
+exten => s,n,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==0)}=TRUE]?GOTO_PANNE_REPARER:$[${PRIORITY}+1])
+exten => s,n,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}==1)}=TRUE]?GOTO_SIGNALER_PANNE:$[${PRIORITY}+1])
+exten => s,n,GotoIf($[${MATH(${sofie_STATUTOUVRAGE}>=2)}=TRUE]?GOTO_PANNE_REPARER:SYSTEM_ERROR)
+exten => s,n(GOTO_SIGNALER_PANNE),goto(s-new_panne,1)
+exten => s,n(GOTO_PANNE_REPARER),goto(s-panne_reparer,1)
+exten => s,n(GOTO_PANNE_NONREPARER),goto(s-panne_nonreparer,1)
+exten => s,n(SYSTEM_ERROR),playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,n,goto(sofie_finappel,s,1)
+
+exten => s-new_panne,1,Macro(sofie_enreg_new_panne,${CALLERID(Num)},${sofie_CODE_FORAGE},2,2,1,sofie_TICKET_PANNE)
+exten => s-new_panne,102,goto(sofie_finappel,s,1)
+exten => s-new_panne,2,goto(s-notif-sms-panne,1)
+exten => s-new_panne,3,playback(${sofie_audio_file_dir}/${sofie_msg_confirmation_comite_eau1})
+exten => s-new_panne,4,goto(sofie_finappel,s,1)
+
+exten => s-panne_reparer,1,Macro(sofie_enreg_panne_reparer_by_num_comite,${CALLERID(Num)})
+exten => s-panne_reparer,102,goto(sofie_finappel,s,1)
+exten => s-panne_reparer,2,goto(s-notif-sms-reparation,1)
+exten => s-panne_reparer,3,playback(${sofie_audio_file_dir}/${sofie_msg_confirmation_comite_eau2})
+exten => s-panne_reparer,4,goto(sofie_finappel,s,1)
+
+exten => s-panne_nonreparer,1,Macro(sofie_enreg_panne_nonreparer_by_num_comite,${sofie_NUMERO_COMITE})
+exten => s-panne_nonreparer,102,goto(sofie_finappel,s,1)
+exten => s-panne_nonreparer,2,goto(s-notif-sms-nonreparation,1)
+exten => s-panne_nonreparer,3,playback(${sofie_audio_file_dir}/${sofie_msg_confirmation_comite_eau3})
+exten => s-panne_nonreparer,4,goto(sofie_finappel,s,1)
+
+exten => s-notif-sms-panne,1,Macro(sofie_enreg_notification,CONN1,2,${sofie_TICKET_PANNE},${CALLERID(Num)})
+exten => s-notif-sms-panne,2,Macro(sofie_send_notifcation,notif-sms-panne,1,1)
+exten => s-notif-sms-panne,3,noop()
+exten => s-notif-sms-panne,n,goto(s-new_panne,3)
+
+exten => s-notif-sms-reparation,1,Macro(sofie_enreg_notification,CONN1,5,${sofie_TICKET_PANNE},${CALLERID(Num)})
+exten => s-notif-sms-reparation,2,Macro(sofie_send_notifcation,notif-sms-reparation,1,1)
+exten => s-notif-sms-reparation,3,noop()
+exten => s-notif-sms-reparation,n,goto(s-panne_reparer,3)
+
+exten => s-notif-sms-nonreparation,1,Macro(sofie_enreg_notification,CONN1,11,${sofie_TICKET_PANNE},${CALLERID(Num)})
+exten => s-notif-sms-nonreparation,2,Macro(sofie_send_notifcation,notif-sms-nonreparation,1,1)
+exten => s-notif-sms-nonreparation,3,noop()
+exten => s-notif-sms-nonreparation,n,goto(s-panne_nonreparer,3)
+
+[macro-sofie_sms_notification]
+exten => s,1,Macro(sofie_sql_getsmscontent,${ARG1},${ARG2},${ARG3},${ARG4},sofie_SMS_DA,sofie_SMS_CONTENT_TAB,sofie_SMS_CONTENT_TAB_SIZE)
+exten => s,102,playback(${sofie_audio_file_dir}/${sofie_msg_system_error})
+exten => s,2,set(sofie_SMS_CONTENT_INDEX=0)
+exten => s,n(NEX_CONTENT),GotoIf($[${MATH(${sofie_SMS_CONTENT_INDEX}<=${sofie_SMS_CONTENT_TAB_SIZE})}=TRUE]?GOTO_PANNE_REPARER:SYSTEM_ERROR)
+exten => s,n,System(lynx -dump "http://${sofie_SMS_IPSERVER}/sms/sendsms.php?SOA=${sofie_SMS_SHORTCODE}&DA=${sofie_SMS_DA}&Osms=1&Modem=${sofie_SMS_NUM_MODEM}&Content=${${sofie_SMS_CONTENT_TAB}${sofie_SMS_CONTENT_INDEX}}
+exten => s,n,set(sofie_SMS_CONTENT_INDEX=$[${sofie_SMS_CONTENT_INDEX}+1])
+exten => s,n,goto(NEX_CONTENT)
+exten => s,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[sofie_infos]
+exten => s,1,set(sofie_infos_local_CPT=0)
+exten => s,2,set(local_CPT=$[${sofie_infos_local_CPT}+1])
+exten => s,3,GotoIf($[${MATH(${sofie_infos_local_CPT}<=3)}=TRUE]?SAISI_CODE:FIN_TENTATIVE)
+exten => s,4(SAISI_CODE),Macro(svi_menu_v2,${sofie_audio_file_dir}/${sofie_msg_infos_services},${sofie_audio_file_dir}/reecouter_infos_services3,${sofie_audio_file_dir}/${sofie_msg_touche_invalid},1,3,1,3,${sofie_audio_file_dir}/${sofie_msg_aucune_reponse},1,sofie_infos,s,2)
+exten => s,105,gotoif($["${LEN(${LECTURE})}" = "0"]?FIN_APPEL)
+exten => s,106(FIN_APPEL),goto(sofie_finappel,s,1)
+exten => s,205,goto(REPRISE_SAISIE)
+exten => s,305,gotoif($["${LEN(${LECTURE})}" = "0"]?GOTO_REPRISE_SAISIE:LECTURE_SAISIE)
+exten => s,405,goto(FIN_TENTATIVE)
+exten => s,5(FIN_TENTATIVE),goto(sofie_finappel,cptfin,1)
+exten => s,n(GOTO_REPRISE_SAISIE),playback(${sofie_audio_file_dir}/${sofie_msg_erreur_saisie})
+exten => s,n,goto(REPRISE_SAISIE)
+
+[sofie_finappel]
+include => sofie_finappel
+exten => s,1,playback(${sofie_audio_file_dir}/msg_sofie_fin)
+exten => s,2,hangup
+exten => cptfin,1,playback(${sofie_audio_file_dir}/msg_tentative_epuise)
+exten => cptfin,2,goto(s,1)

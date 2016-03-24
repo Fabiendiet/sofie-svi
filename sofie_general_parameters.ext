@@ -1,0 +1,80 @@
+[macro-sofie_general_parameters]
+exten => s,1,set(sofie_LAND=fr)
+exten => s,n,set(ENABLE_BLACKLIST=TRUE);
+exten => s,n,set(ENABLE_WHILELIST=FALSE); Ce parametre est a FALSE par defaut, par conséquent tous les numéros sont autorisés.
+exten => s,n,set(sofie_RDNIS=4405)
+exten => s,n,set(sofie_DNID=4405)]
+exten => s,n,set(sofie_SMS_SHORTCODE=77789417)
+exten => s,n,set(sofie_SMS_NUM_MODEM=1)
+exten => s,n,set(sofie_SMS_PREFIXE=+225)
+exten => s,9,Macro(sofie_connexions_db)
+exten => s,10,set(CONN2=0)
+exten => s,n,set(CONN1=0)
+exten => s,n,set(localCPT=0)
+exten => s,n,set(PROC_NAME=PROC_GET_NB_LISTE_BY_CODEKIT_NEW)
+exten => s,n,set(sofie_SMS_IPSERVER=192.168.1.108)
+;exten => s,n,set(sofie_SMS_IPSERVER=192.168.2.108)
+exten => s,n,set(saisie_nbi_local_CPT_MAX=3)
+exten => s,n,set(saisie_nbv_local_CPT_MAX=3)
+exten => s,n,set(sofie_LONGUEUR_CODE_ZONE=3); longueur code celi
+exten => s,n,set(sofie_NB_JOURS_REPARATION=2);
+exten => s,n,set(sofie_LEN_NUM_INTERIM_MIN=8); longueur minimum du numero de telephone agent interimaire
+exten => s,n,set(sofie_LEN_NUM_INTERIM_MAX=8); longueur maximum du numero de telephone agent interimaire
+exten => s,n,set(sofie_LEN_NUM_TICKET_MIN=4); longueur minimum du numero de panne
+exten => s,n,set(sofie_LEN_NUM_TICKET_MAX=14); longueur maximum du numero de panne
+exten => s,n,set(sofie_LEN_NUM_FORAGE_MIN=3); longueur minimum du numero de forage
+exten => s,n,set(sofie_LEN_NUM_FORAGE_MAX=6); longueur maximum du numero de forage
+exten => s,n,set(sofie_saisie_incidents_local_CPT=0)
+exten => s,n,set(sofie_Incidents_local_CPT1=0)
+exten => s,n,set(sofie_Incidents_local_CPT2=0)
+exten => s,n,set(sofie_Incidents_local_CPT3=0)
+exten => s,n,set(sofie_Incidents_local_CPT4=0)
+exten => s,n,set(sofie_verif_code_incident_type_CPT=0)
+exten => s,n,set(sofie_local_CPT=0)
+exten => s,n,set(sofie_local_CPT1=0)
+exten => s,n,set(sofie_local_CPT2=0)
+exten => s,n,set(sofie_local_CPT3=0)
+exten => s,n,set(sofie_local_CPT4=0)
+exten => s,n,set(sofie_local_CPT_MAX=3)
+exten => s,n,set(sofie_local_CPT1_MAX=3)
+exten => s,n,set(sofie_local_CPT2_MAX=3)
+exten => s,n,set(susie2014_local_CPT_MAX=3)
+exten => s,n,set(sofie_contraints_local_CPT=0)
+exten => s,n,Macro(sofie_audio_file_config)
+exten => s,n,set(sofie_PASSWD_MIN=4)
+exten => s,n,set(sofie_PASSWD_MAX=4)
+exten => s,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_get_contraints_list_1]
+exten => s,1,set(CONTRAINT_DATA1=\${TOTAL_SEX\}==\${sofie_DATA_SUM\})
+exten => s,n,set(CONTRAINT_DATA1_CONTEXT=sofie_saisie_suffrage_exprime_liste_new\,s\,3)
+;exten => s,n,set(CONTRAINT_DATA2=${sofie_NBV}==\${MATH\(\${sofie_NBN}\+\${TOTAL_SEX}\,i\)})
+exten => s,n,set(CONTRAINT_DATA2=\${sofie_NBV}==\${MATH\(\${sofie_NBN}\+\${TOTAL_SEX}\)})
+exten => s,n,set(CONTRAINT_DATA2_CONTEXT=sofie_saisie_nb_incrit_new\,s\,1)
+exten => s,n,set(CONTRAINT_LIST_SIZE=2);Nombre de contrainte definie
+
+[macro-get_contraints_list_2]
+exten => s,1,set(CONTRAINT_DATA1=\${TOTAL_SEX\}==\${sofie_DATA_SUM\})
+exten => s,n,set(CONTRAINT_DATA1_CONTEXT=sofie_saisie_suffrage_exprime_liste_new\,s\,2)
+exten => s,n,set(CONTRAINT_DATA2=\${sofie_NBV}==\${MATH\(\${sofie_NBN}\+\${TOTAL_SEX}\)})
+exten => s,n,set(CONTRAINT_DATA2_CONTEXT=sofie_saisie_nb_incrit_new\,s\,1)
+exten => s,n,set(CONTRAINT_LIST_SIZE=2);Nombre de contrainte definie
+
+[macro-get_contraints_list_3]
+exten => s,1,set(CONTRAINT_DATA1=\${\${LIST_CODE0\}\}==\${MATH\(\${\${LIST_CODE1\}\}\+\${\${LIST_CODE2\}\}\,i\)})
+exten => s,n,set(CONTRAINT_DATA1_CONTEXT=sofie_saisie_data_list_rec\,s\,1)
+exten => s,n,set(CONTRAINT_LIST_SIZE=1);Nombre de contrainte definie
+exten => s,n,goto(${MACRO_CONTEXT},${MACRO_EXTEN},$[${MACRO_PRIORITY}+1])
+
+[macro-sofie_general_parameters_rec]
+exten => s,1,set(sofie_LAND=fr)
+exten => s,n,set(sofie_RDNIS=4405)
+exten => s,n,set(sofie_DNID=4405)]
+exten => s,n,set(sofie_SMS_SHORTCODE=1022)
+exten => s,n,set(sofie_SMS_PREFIXE=+228)
+exten => s,6,Macro(connexions_db)
+exten => s,7,set(CONN2=0)
+exten => s,n,set(CONN1=0)
+exten => s,n,set(localCPT=0)
+exten => s,n,set(PROC_NAME=PROC_GET_NB_LISTE_BY_CODEKIT_REC)
+exten => s,n,set(TYPESAISIE=1)
